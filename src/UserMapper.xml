@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 作用:指定接口 namesapce ：接口的全路径 -->
+<mapper namespace="cn.mapper.UserMapper">
+	<!-- 
+		type:是和哪个对象做映射 ，id映射的map
+		id:唯一主键
+		result：普通字段的映射
+		column：数据库表字段名
+		property：pojo对象的属性名
+		column和property放在一起，就是建立了他们的映射关系
+	-->
+	<resultMap type="cn.pojo.Car" id="CarMap">
+		<id column="carId" property="carId"/>
+		<result column="name" property="carName"/>
+	</resultMap>
+	<!-- 一对多的关系映射  ofType:对象的类型 associstion是一对一-->
+	<resultMap type="cn.pojo.UserVo" id="UserCarMap">
+		<id column="id" property="id"/>
+		<result column="username" property="username"/>
+		<result column="birthday" property="birthday"/>
+		<result column="sex" property="sex"/>
+		<result column="address" property="address"/>
+		<collection property="cars" ofType="cn.pojo.Car">
+			<id column="carId" property="carId"/>
+			<result column="name" property="carName"/>
+			<result column="userId" property="userId"/>
+		</collection>
+	</resultMap>
+<!-- 根据id查询用户 -->
+	<select id="selectById" parameterType="int" resultType="User">
+		select * from user where id=#{id}
+	</select>
+	<!-- 添加用户 -->
+	<insert id="addUser" parameterType="User">
+		insert into user(username,birthday,sex,address) values(#{username},#{birthday},#{sex},#{address})
+	</insert>
+	<!-- 通过map传递参数  查询用户列表
+		map的取值方式#{map的key} 取出的值就是map中的value
+	 -->
+	<select id="selectByMap" parameterType="map" resultType="User">
+		select * from user where sex=#{sex} and address like '%${address}%';
+	</select>
+	<!-- 多个参数查询 用户列表
+	传递多个参数的时候，不需要配置parameterType -->
+	<select id="selectByParams" resultType="User">
+		<!-- select * from user where sex=#{sex} and address like '%${addr}%' -->
+		select * from user where sex=#{0} and address like #{1}
+	</select>
+	<!-- 查询所有的小汽车 -->
+	<!-- <select id="selectCars" resultType="car">
+		select * from car
+	</select> -->
+	<select id="selectCars" resultMap="CarMap">
+		select * from car
+	</select>
+	<!-- 查询所有用户和他所拥有的汽车的信息 -->
+	<select id="selectUserAndCar" resultMap="UserCarMap">
+		select * from user u,car c where u.id=c.userId
+	</select>
+	<!-- if判断用例，条件查询用户列表 -->
+	<!-- where可以去除多余的and -->
+	<select id="selectUser" parameterType="User" resultType="User">
+		select * from user <!-- 1=1 -->
+		<where>
+			<if test="sex!=null and sex!=''">
+				and sex=#{sex}
+			</if>
+			<if test="username!=null and username!=''">
+				and username like '%${username}%'
+			</if>
+			<if test="id!=null and id!=0">
+				and id=#{id}
+			
+			</if>
+		</where>
+		
+	</select>
+	<!-- 修改用户的信息 -->
+	<!-- set:可以去除多余的， -->
+	<update id="updateUser" parameterType="User">
+		update user 
+		<set>
+			<if test="sex!=null and sex!=''">
+				sex=#{sex},
+			</if>
+			<if test="address!=null and address!=''">
+				address=#{address}
+			</if>
+		</set>
+		where id=#{id}
+	</update>
+	<!-- 根据ids来批量的查询用户 -->
+	<select id="selectByIds" parameterType="list" resultType="User">
+		select * from user where id in
+		<!-- 
+		collection：如果传递的是list或者数组，填写list。如果是map，写map的key。如果是pojo，则写实体属性名
+		item:循环中的当前的对象
+		open:以什么开始
+		close:以什么结束
+		separator:分隔符，以什么进行分割
+		 -->
+		<foreach collection="list" item="id" open="(" separator="," close=")" >
+			#{id}
+		</foreach>
+	
+	</select>
+</mapper>
